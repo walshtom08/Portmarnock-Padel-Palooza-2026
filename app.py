@@ -3,7 +3,6 @@ import pandas as pd
 
 st.set_page_config(page_title="Portmarnock Padel Palooza", layout="wide")
 
-# CSS
 st.markdown("""
     <style>
     html, body, [data-testid="stAppViewContainer"] { background-color: #000000 !important; color: #FFFF00 !important; }
@@ -13,7 +12,7 @@ st.markdown("""
 
 st.title("🎾 Portmarnock Padel Palooza 🎾")
 
-# Full Tournament Data
+# Data Initialization
 if "matches" not in st.session_state:
     st.session_state["matches"] = [
         # Group A
@@ -32,7 +31,9 @@ if "matches" not in st.session_state:
         {"Group": "Group B", "Wave": "W4", "Time": "17:45", "Court": "5", "Team 1": "Jamie/Kevin", "Score 1": 0, "Team 2": "Simon/Cillian", "Score 2": 0},
         # Knockout
         {"Group": "Knockout", "Wave": "W5", "Time": "18:10", "Court": "3", "Phase": "Semi 1 (A1 v B2)", "Team 1": "TBD", "Score 1": 0, "Team 2": "TBD", "Score 2": 0},
-        {"Group": "Knockout", "Wave": "W5", "Time": "18:10", "Court": "4", "Phase": "Semi 2 (A2 v B1)", "Team 1": "TBD", "Score 1": 0, "Team 2": "TBD", "Score 2": 0}
+        {"Group": "Knockout", "Wave": "W5", "Time": "18:10", "Court": "4", "Phase": "Semi 2 (A2 v B1)", "Team 1": "TBD", "Score 1": 0, "Team 2": "TBD", "Score 2": 0},
+        # Finals
+        {"Group": "Finals", "Wave": "W8", "Time": "19:05", "Court": "4", "Phase": "Champions Final", "Team 1": "Winner S1", "Score 1": 0, "Team 2": "Winner S2", "Score 2": 0}
     ]
 
 def get_standings(group):
@@ -51,12 +52,22 @@ def update_bracket():
     s_a = get_standings("Group A")
     s_b = get_standings("Group B")
     for m in st.session_state["matches"]:
+        # Update Semis
         if m.get("Phase") == "Semi 1 (A1 v B2)":
             if len(s_a) > 0: m["Team 1"] = s_a.iloc[0]["Team"]
             if len(s_b) > 1: m["Team 2"] = s_b.iloc[1]["Team"]
         if m.get("Phase") == "Semi 2 (A2 v B1)":
             if len(s_a) > 1: m["Team 1"] = s_a.iloc[1]["Team"]
             if len(s_b) > 0: m["Team 2"] = s_b.iloc[0]["Team"]
+        
+        # Update Final
+        if m.get("Group") == "Finals":
+            s1 = [m for m in st.session_state["matches"] if m.get("Phase") == "Semi 1 (A1 v B2)"][0]
+            s2 = [m for m in st.session_state["matches"] if m.get("Phase") == "Semi 2 (A2 v B1)"][0]
+            if int(s1["Score 1"]) > int(s1["Score 2"]): m["Team 1"] = s1["Team 1"]
+            elif int(s1["Score 2"]) > int(s1["Score 1"]): m["Team 1"] = s1["Team 2"]
+            if int(s2["Score 1"]) > int(s2["Score 2"]): m["Team 2"] = s2["Team 1"]
+            elif int(s2["Score 2"]) > int(s2["Score 1"]): m["Team 2"] = s2["Team 2"]
 
 def update_scores(key, df):
     delta = st.session_state[key]
@@ -81,3 +92,7 @@ for g in ["Group A", "Group B"]:
 st.header("⚔️ Knockout Stage")
 sub_ko = df[df["Group"] == "Knockout"].drop(columns=["Group"], errors="ignore")
 st.data_editor(sub_ko, key="e_ko", hide_index=True, use_container_width=True, on_change=update_scores, args=("e_ko", sub_ko))
+
+st.header("🏆 The Finals")
+sub_f = df[df["Group"] == "Finals"].drop(columns=["Group"], errors="ignore")
+st.data_editor(sub_f, key="e_f", hide_index=True, use_container_width=True, on_change=update_scores, args=("e_f", sub_f))
