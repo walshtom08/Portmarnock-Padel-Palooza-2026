@@ -28,7 +28,7 @@ st.markdown("""
 
 st.title("🎾 Portmarnock Padel Palooza 🎾")
 st.subheader("Live Tournament Dashboard & Score Tracker")
-st.write("Type scores directly into the tables below. Click 'Save & Sync Tournament' to update!")
+st.write("Type scores directly into the tables below. Click 'Save & Sync Tournament' at the bottom to lock them in!")
 
 # --- DATA INITIALIZATION ---
 initial_matches = [
@@ -67,41 +67,53 @@ except Exception:
 if "matches" not in conn:
     conn["matches"] = initial_matches
 
-# Work directly with a Dataframe representation of the stored data
+# Read raw matches from database storage
 df_current = pd.DataFrame(conn["matches"])
 
-# Map column configurations to ensure names/times are locked and only score columns can be adjusted
+# Define explicit column protections. Columns set to disabled=True are read-only!
 column_setup = {
-    "ID": None, "Group": None, "Phase": "Phase", 
-    "Wave": "Wave", "Time": "Time", "Court": "Court",
-    "Team 1": "Team 1", "Score 1": st.column_config.NumberColumn("Score 1", min_value=0, step=1),
-    "Team 2": "Team 2", "Score 2": st.column_config.NumberColumn("Score 2", min_value=0, step=1)
+    "ID": st.column_config.TextColumn("ID", disabled=True),
+    "Group": st.column_config.TextColumn("Group", disabled=True),
+    "Wave": st.column_config.TextColumn("Wave", disabled=True),
+    "Phase": st.column_config.TextColumn("Phase", disabled=True),
+    "Time": st.column_config.TextColumn("Time", disabled=True),
+    "Court": st.column_config.TextColumn("Court", disabled=True),
+    "Team 1": st.column_config.TextColumn("Team 1", disabled=True),
+    "Score 1": st.column_config.NumberColumn("Score 1", min_value=0, step=1, disabled=False),
+    "Team 2": st.column_config.TextColumn("Team 2", disabled=True),
+    "Score 2": st.column_config.NumberColumn("Score 2", min_value=0, step=1, disabled=False)
 }
 
-# --- RENDER EDITABLE TABLES ---
+# Explicitly choose columns to view in the tables
+visible_columns = ["Wave", "Phase", "Time", "Court", "Team 1", "Score 1", "Team 2", "Score 2"]
+
+# --- RENDER INTERACTIVE TABLES ---
 st.header("📊 Group A Fixtures")
 df_a = df_current[df_current["Group"] == "Group A"]
-edited_a = st.data_editor(df_a, key="edit_a", column_config=column_setup, hide_index=True, use_container_width=True)
+edited_a = st.data_editor(df_a, key="edit_a", column_config=column_setup, column_order=visible_columns, hide_index=True, use_container_width=True)
 
 st.header("📊 Group B Fixtures")
 df_b = df_current[df_current["Group"] == "Group B"]
-edited_b = st.data_editor(df_b, key="edit_b", column_config=column_setup, hide_index=True, use_container_width=True)
+edited_b = st.data_editor(df_b, key="edit_b", column_config=column_setup, column_order=visible_columns, hide_index=True, use_container_width=True)
 
 st.header("⚔️ Knockout Stage")
 df_ko = df_current[df_current["Group"] == "Knockout"]
-edited_ko = st.data_editor(df_ko, key="edit_ko", column_config=column_setup, hide_index=True, use_container_width=True)
+edited_ko = st.data_editor(df_ko, key="edit_ko", column_config=column_setup, column_order=visible_columns, hide_index=True, use_container_width=True)
 
 st.header("🏆 The Finals")
 df_f = df_current[df_current["Group"] == "Finals"]
-edited_f = st.data_editor(df_f, key="edit_f", column_config=column_setup, hide_index=True, use_container_width=True)
+edited_f = st.data_editor(df_f, key="edit_f", column_config=column_setup, column_order=visible_columns, hide_index=True, use_container_width=True)
 
 # --- GLOBAL SAVE TRIGGER ---
 st.write("---")
 if st.button("💾 Save & Sync Tournament Changes", use_container_width=True):
-    # Combine all updated segments back into a single global data frame
-    updated_all = pd.concat([edited_a, edited_b, edited_ko, edited_f], ignore_index=True)
-    
+    # Pull the exact underlying full dataset (including hidden grouping keys) out of the widgets
+    # This prevents data dropping out when re-merging
+    all_updated_records = []
+    for edited_segment in [edited_a, edited_b, edited_ko, edited_f]:
+        all_updated_records.extend(edited_segment.to_dict(orient="records"))
+        
     # Save back to cache
-    conn["matches"] = updated_all.to_dict(orient="records")
+    conn["matches"] = all_updated_records
     st.success("All table changes synced perfectly for all players!")
     st.rerun()
