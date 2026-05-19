@@ -69,10 +69,14 @@ def update_tournament():
             if s1!=s2: sf[p] = {"W": m["Team 1"] if s1>s2 else m["Team 2"], "L": m["Team 2"] if s1>s2 else m["Team 1"]}
     for m in st.session_state["matches"]:
         p = m.get("Phase")
-        if p=="Shit the Bed Cup" and "Semi Final 1" in sf and "Semi Final 2" in sf: m["Team 1"], m["Team 2"] = sf["Semi Final 1"]["W"], sf["Semi Final 2"]["W"]
-        elif p=="Shart in your pants Cup" and "Semi Final 1" in sf and "Semi Final 2" in sf: m["Team 1"], m["Team 2"] = sf["Semi Final 1"]["L"], sf["Semi Final 2"]["L"]
-        elif p=="Champions Cup" and "Semi Final 3" in sf and "Semi Final 4" in sf: m["Team 1"], m["Team 2"] = sf["Semi Final 3"]["W"], sf["Semi Final 4"]["W"]
-        elif p=="Shitstain Cup" and "Semi Final 3" in sf and "Semi Final 4" in sf: m["Team 1"], m["Team 2"] = sf["Semi Final 3"]["L"], sf["Semi Final 4"]["L"]
+        if p=="Shart in your pants Cup" and "Semi Final 1" in sf and "Semi Final 2" in sf: 
+            m["Team 1"], m["Team 2"] = sf["Semi Final 1"]["W"], sf["Semi Final 2"]["W"]
+        elif p=="Shit the Bed Cup" and "Semi Final 1" in sf and "Semi Final 2" in sf: 
+            m["Team 1"], m["Team 2"] = sf["Semi Final 1"]["L"], sf["Semi Final 2"]["L"]
+        elif p=="Champions Cup" and "Semi Final 3" in sf and "Semi Final 4" in sf: 
+            m["Team 1"], m["Team 2"] = sf["Semi Final 3"]["W"], sf["Semi Final 4"]["W"]
+        elif p=="Shitstain Cup" and "Semi Final 3" in sf and "Semi Final 4" in sf: 
+            m["Team 1"], m["Team 2"] = sf["Semi Final 3"]["L"], sf["Semi Final 4"]["L"]
 
 def on_edit(key, df):
     delta = st.session_state[key]
