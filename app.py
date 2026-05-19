@@ -3,17 +3,24 @@ import pandas as pd
 
 st.set_page_config(page_title="Portmarnock Padel Palooza", layout="wide")
 
-# CSS for highlights and column adjustments
+# CSS to make the score cells stand out clearly
 st.markdown("""
     <style>
     html, body, [data-testid="stAppViewContainer"] { background-color: #000000 !important; color: #FFFF00 !important; }
+    
+    /* Target the score cells in the data_editor */
+    [data-testid="stDataEditor"] td:has(div[data-testid="stNumberInput"]) {
+        background-color: #550055 !important; /* Deep Purple highlight for cells */
+    }
     input[aria-label="Score 1"], input[aria-label="Score 2"] {
-        background-color: #FF00FF !important; color: #FFFFFF !important; font-weight: bold !important;
+        background-color: #FF00FF !important; /* Magenta background for the input */
+        color: #FFFFFF !important;
+        font-weight: bold !important;
     }
     </style>
 """, unsafe_allow_html=True)
 
-# --- INITIALIZATION ---
+# Initialize Session State
 if "matches" not in st.session_state:
     st.session_state["matches"] = [
         {"Group": "Group A", "Wave": "W1", "Time": "16:30", "Court": "3", "Team 1": "Stu/Niall", "Score 1": 0, "Team 2": "Eric/Dermo", "Score 2": 0},
@@ -38,7 +45,16 @@ if "matches" not in st.session_state:
         {"Group": "Finals", "Wave": "W8", "Time": "19:05", "Court": "4", "Phase": "Champions Cup", "Team 1": "W-SF3", "Score 1": 0, "Team 2": "W-SF4", "Score 2": 0}
     ]
 
-# --- FUNCTIONS ---
+# Define narrow column configuration
+col_config = {
+    "Wave": st.column_config.TextColumn(width="small"),
+    "Time": st.column_config.TextColumn(width="small"),
+    "Court": st.column_config.TextColumn(width="small"),
+    "Score 1": st.column_config.NumberColumn(width="small"),
+    "Score 2": st.column_config.NumberColumn(width="small"),
+}
+
+# Standings and update functions remain same...
 def get_standings(group):
     data = [m for m in st.session_state["matches"] if m["Group"] == group]
     teams = set([m["Team 1"] for m in data] + [m["Team 2"] for m in data])
@@ -59,14 +75,6 @@ def update_scores(key, df):
             for m in st.session_state["matches"]:
                 if m.get("Group") == match_row["Group"] and m.get("Team 1") == match_row["Team 1"] and m.get("Time") == match_row["Time"]:
                     m.update(up)
-
-col_config = {
-    "Wave": st.column_config.TextColumn(width="small"),
-    "Time": st.column_config.TextColumn(width="small"),
-    "Court": st.column_config.TextColumn(width="small"),
-    "Score 1": st.column_config.NumberColumn(width="small"),
-    "Score 2": st.column_config.NumberColumn(width="small"),
-}
 
 # --- UI ---
 st.title("🎾 Portmarnock Padel Palooza 🎾")
