@@ -54,7 +54,6 @@ def get_standings(group):
     for t, v in res.items():
         rows.append({
             "Team": t, 
-            "Wins": v["Wins"], 
             "Match Points": v["Wins"] * 2, 
             "Points Scored": v["Pts"] + (100 if v["Wins"] == 3 else 0)
         })
