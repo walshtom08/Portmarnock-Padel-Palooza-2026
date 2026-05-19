@@ -79,7 +79,7 @@ def calculate_standings(df, group_name):
     standings_df.columns = ['Team', 'P', 'W', 'L', 'GF', 'GA', 'Diff', 'Pts']
     return standings_df.sort_values(by=['Pts', 'Diff', 'W'], ascending=False).reset_index(drop=True)
 
-# Run calculations
+# Run calculations safely
 group_a_table = calculate_standings(st.session_state.matches, "Group A")
 group_b_table = calculate_standings(st.session_state.matches, "Group B")
 
@@ -111,7 +111,7 @@ if st.button("Save & Sync Score across Dashboard", use_container_width=True, typ
 
 
 # ==========================================
-# SECTION 2: FULL FIXTURES GRID (Your Exact Courts & Times)
+# SECTION 2: FULL FIXTURES GRID
 # ==========================================
 st.markdown("<p class='section-font'>📅 Full Tournament Schedule & Results</p>", unsafe_allow_html=True)
 
@@ -134,4 +134,48 @@ st.dataframe(
 # ==========================================
 # SECTION 3: LIVE GROUP TABLES
 # ==========================================
-st.markdown("<p class='section-font'>📊 Live Standing Tables</p>", unsafe_allow
+st.markdown("<p class='section-font'>📊 Live Standing Tables</p>", unsafe_allow_html=True)
+col_left, col_right = st.columns(2)
+
+with col_left:
+    st.markdown("### Group A Leaderboard")
+    st.dataframe(group_a_table, use_container_width=True, hide_index=True)
+
+with col_right:
+    st.markdown("### Group B Leaderboard")
+    st.dataframe(group_b_table, use_container_width=True, hide_index=True)
+
+
+# ==========================================
+# SECTION 4: AUTOMATIC KNOCKOUT BRACKET PREDICTIONS (Crash-Proofed)
+# ==========================================
+st.markdown("<p class='section-font'>🏆 Projected Knockout Brackets & Finals</p>", unsafe_allow_html=True)
+
+# Defensive checks to extract rankings safely without crashing if rows are missing
+gA_list = group_a_table['Team'].tolist() if not group_a_table.empty else []
+while len(gA_list) < 4:
+    gA_list.append("TBD")
+
+gB_list = group_b_table['Team'].tolist() if not group_b_table.empty else []
+while len(gB_list) < 4:
+    gB_list.append("TBD")
+
+st.markdown("### 🔀 Projected Semi-Final Matchups")
+col_sf1, col_sf2 = st.columns(2)
+with col_sf1:
+    st.info(f"**Semi Final 1 (18:10 | Court 3)**\n\n🥉 Group A 3rd Place: **{gA_list[2]}**\n\nvs\n\n🏅 Group B 4th Place: **{gB_list[3]}**")
+    st.info(f"**Semi Final 3 (18:10 | Court 5)**\n\n🥇 Group A 1st Place: **{gA_list[0]}**\n\nvs\n\n🥈 Group B 2nd Place: **{gB_list[1]}**")
+
+with col_sf2:
+    st.info(f"**Semi Final 2 (18:10 | Court 4)**\n\n🏅 Group A 4th Place: **{gA_list[3]}**\n\nvs\n\n🥉 Group B 3rd Place: **{gB_list[2]}**")
+    st.info(f"**Semi Final 4 (18:35 | Court 3)**\n\n🥈 Group A 2nd Place: **{gA_list[1]}**\n\nvs\n\n🥇 Group B 1st Place: **{gB_list[0]}**")
+
+st.markdown("### 🏁 Cup Finals (Wave 6, 7, and 8 Schedule)")
+col_f1, col_f2 = st.columns(2)
+with col_f1:
+    st.error("**💩 Shit the Bed Cup Final (18:35 | Court 4)**\n\nLoser Semi Final 1 vs Loser Semi Final 2")
+    st.warning("**🍑 Shart in your pants Cup Final (18:35 | Court 5)**\n\nWinner Semi Final 1 vs Winner Semi Final 2")
+
+with col_f2:
+    st.error("**🩸 Shitstain Cup Final (19:00 | Court 3)**\n\nLoser Semi Final 3 vs Loser Semi Final 4")
+    st.success("**👑 Champions Cup Final (19:05 | Court 4)**\n\nWinner Semi Final 3 vs Winner Semi Final 4")
