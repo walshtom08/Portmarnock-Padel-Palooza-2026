@@ -44,39 +44,5 @@ def get_standings(group):
     res = {}
     for m in data:
         t1, t2 = m["Team 1"], m["Team 2"]
-        s1 = int(m.get("Score 1", 0)); s2 = int(m.get("Score 2", 0))
-        for t in [t1, t2]: res.setdefault(t, {"Wins": 0, "Pts": 0})
-        res[t1]["Pts"] += s1; res[t2]["Pts"] += s2
-        if s1 > s2: res[t1]["Wins"] += 1
-        elif s2 > s1: res[t2]["Wins"] += 1
-    
-    rows = []
-    for t, v in res.items():
-        bonus = 100 if v["Wins"] == 3 else 0
-        rows.append({
-            "Team": t, 
-            "Match Points": v["Wins"] * 2, 
-            "Points Scored": v["Pts"] + bonus
-        })
-    return pd.DataFrame(rows).sort_values(["Match Points", "Points Scored"], ascending=False)
-
-def on_editor_change(key, df):
-    delta = st.session_state[key]
-    if "edited_rows" in delta:
-        for idx, up in delta["edited_rows"].items():
-            original_row = df.iloc[int(idx)]
-            for m in st.session_state["matches"]:
-                if m["Group"] == original_row["Group"] and m.get("Phase") == original_row.get("Phase") and m.get("Time") == original_row.get("Time"):
-                    m.update(up)
-        st.rerun() # Forces immediate update
-
-# --- UI ---
-st.title("🎾 Padel Palooza")
-df = pd.DataFrame(st.session_state["matches"])
-
-for section in ["Group A", "Group B", "Knockout", "Finals"]:
-    st.subheader(f"📊 {section}")
-    sub = df[df["Group"] == section]
-    st.data_editor(sub, key=f"e_{section}", use_container_width=True, on_change=on_editor_change, args=(f"e_{section}", sub))
-    if "Group" in section:
-        st.dataframe(get_standings(section), use_container_width=True)
+        try:
+            s1 = int(m.get("Score
