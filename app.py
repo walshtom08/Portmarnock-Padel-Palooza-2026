@@ -49,7 +49,16 @@ def get_standings(group):
         res[t1]["Pts"] += s1; res[t2]["Pts"] += s2
         if s1 > s2: res[t1]["Wins"] += 1
         elif s2 > s1: res[t2]["Wins"] += 1
-    return pd.DataFrame([{"Team": t, "Match Points": v["Wins"] * 2, "Points Scored": v["Pts"]} for t, v in res.items()]).sort_values(["Match Points", "Points Scored"], ascending=False)
+    
+    rows = []
+    for t, v in res.items():
+        bonus = 100 if v["Wins"] == 3 else 0
+        rows.append({
+            "Team": t, 
+            "Match Points": v["Wins"] * 2, 
+            "Points Scored": v["Pts"] + bonus
+        })
+    return pd.DataFrame(rows).sort_values(["Match Points", "Points Scored"], ascending=False)
 
 def on_editor_change(key, df):
     delta = st.session_state[key]
@@ -59,6 +68,7 @@ def on_editor_change(key, df):
             for m in st.session_state["matches"]:
                 if m["Group"] == original_row["Group"] and m.get("Phase") == original_row.get("Phase") and m.get("Time") == original_row.get("Time"):
                     m.update(up)
+        st.rerun() # Forces immediate update
 
 # --- UI ---
 st.title("🎾 Padel Palooza")
