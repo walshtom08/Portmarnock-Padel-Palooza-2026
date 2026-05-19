@@ -13,7 +13,6 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- INITIALIZATION ---
 if "matches" not in st.session_state:
     st.session_state["matches"] = [
         {"Group": "Group A", "Wave": "W1", "Time": "16:30", "Court": "3", "Team 1": "Stu/Niall", "Score 1": 0, "Team 2": "Eric/Dermo", "Score 2": 0},
@@ -38,34 +37,38 @@ if "matches" not in st.session_state:
         {"Group": "Finals", "Wave": "W8", "Time": "19:05", "Court": "4", "Phase": "Champions Cup", "Team 1": "TBD", "Score 1": 0, "Team 2": "TBD", "Score 2": 0}
     ]
 
-# --- LOGIC ---
-def get_standings(group):
-    data = [m for m in st.session_state["matches"] if m["Group"] == group]
-    res = {}
-    for m in data:
+def get_standings(g):
+    d = [m for m in st.session_state["matches"] if m["Group"] == g]
+    r = {}
+    for m in d:
         t1, t2 = m["Team 1"], m["Team 2"]
-        try:
-            s1, s2 = int(m.get("Score 1", 0)), int(m.get("Score 2", 0))
-        except (ValueError, TypeError):
-            s1, s2 = 0, 0
-        for t in [t1, t2]: res.setdefault(t, {"Wins": 0, "Pts": 0})
-        res[t1]["Pts"] += s1; res[t2]["Pts"] += s2
-        if s1 > s2: res[t1]["Wins"] += 1
-        elif s2 > s1: res[t2]["Wins"] += 1
-    rows = [{"Team": t, "Match Points": v["Wins"] * 2, "Points Scored": v["Pts"] + (100 if v["Wins"] == 3 else 0)} for t, v in res.items()]
-    return pd.DataFrame(rows).sort_values(["Match Points", "Points Scored"], ascending=False)
+        try: s1, s2 = int(m.get("Score 1", 0)), int(m.get("Score 2", 0))
+        except: s1, s2 = 0, 0
+        for t in [t1, t2]: r.setdefault(t, {"W": 0, "P": 0})
+        r[t1]["P"] += s1; r[t2]["P"] += s2
+        if s1 > s2: r[t1]["W"] += 1
+        elif s2 > s1: r[t2]["W"] += 1
+    rows = [{"Team": t, "Pts": v["W"]*2, "Score": v["P"]+(100 if v["W"]==3 else 0)} for t, v in r.items()]
+    return pd.DataFrame(rows).sort_values(["Pts", "Score"], ascending=False)
 
-def update_knockout_teams():
-    sA = get_standings("Group A")["Team"].tolist()
-    sB = get_standings("Group B")["Team"].tolist()
+def update_ko():
+    sA, sB = get_standings("Group A")["Team"].tolist(), get_standings("Group B")["Team"].tolist()
     for m in st.session_state["matches"]:
-        if m["Phase"] == "Semi Final 1" and len(sA) > 0 and len(sB) > 1: m["Team 1"], m["Team 2"] = sA[0], sB[1]
-        if m["Phase"] == "Semi Final 2" and len(sB) > 0 and len(sA) > 1: m["Team 1"], m["Team 2"] = sB[0], sA[1]
+        if m["Phase"] == "Semi Final 1" and len(sA)>0 and len(sB)>1: m["Team 1"], m["Team 2"] = sA[0], sB[1]
+        if m["Phase"] == "Semi Final 2" and len(sB)>0 and len(sA)>1: m["Team 1"], m["Team 2"] = sB[0], sA[1]
 
-def on_editor_change(key, df):
+def on_edit(key, df):
     delta = st.session_state[key]
     if "edited_rows" in delta:
         for idx, up in delta["edited_rows"].items():
             row = df.iloc[int(idx)]
             for m in st.session_state["matches"]:
-                if m["Group"] == row["Group"] and m["Team 1"] == row["Team 1"] and m["Time"] == row["Time
+                if m["Group"] == row["Group"] and m["Team 1"] == row["Team 1"] and m["Time"] == row["Time"]:
+                    for f in ["Score 1", "Score 2"]:
+                        if f in up: m[f] = int(up[f])
+        update_ko()
+        st.rerun()
+
+st.title("🎾 Padel Palooza")
+df = pd.DataFrame(st.session_state["matches"])
+for s in ["Group A", "Group B
