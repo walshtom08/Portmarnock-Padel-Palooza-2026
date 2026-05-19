@@ -24,7 +24,7 @@ st.markdown("""
 
 st.title("🎾 Portmarnock Padel Palooza 🎾")
 st.subheader("Live Tournament Dashboard & Score Tracker")
-st.write("Type scores directly into the cells below. Edits auto-save instantly!")
+st.write("Type scores directly into the cells below. Table standings update automatically!")
 
 # --- DATA INITIALIZATION ---
 if "matches" not in st.session_state:
@@ -47,57 +47,4 @@ if "matches" not in st.session_state:
         {"ID": "KO1", "Group": "Knockout", "Wave": "Wave 5", "Phase": "Semi Final 1 (G1 3rd v G2 4th)", "Time": "18:10 - 18:30", "Court": "3", "Team 1": "Group 1 3rd", "Score 1": 0, "Team 2": "Group 2 4th", "Score 2": 0},
         {"ID": "KO2", "Group": "Knockout", "Wave": "Wave 5", "Phase": "Semi Final 2 (G1 4th v G2 3rd)", "Time": "18:10 - 18:30", "Court": "4", "Team 1": "Group 1 4th", "Score 1": 0, "Team 2": "Group 2 3rd", "Score 2": 0},
         {"ID": "KO3", "Group": "Knockout", "Wave": "Wave 5", "Phase": "Semi Final 3 (G1 1st v G2 2nd)", "Time": "18:10 - 18:30", "Court": "5", "Team 1": "Jason/Wonka", "Score 1": 0, "Team 2": "Jamie/Kevin", "Score 2": 0},
-        {"ID": "KO4", "Group": "Knockout", "Wave": "Wave 6", "Phase": "Semi Final 4 (G1 2nd v G2 1st)", "Time": "18:35 - 18:55", "Court": "3", "Team 1": "Stu/Niall Hayden", "Score 1": 0, "Team 2": "Gerry/Rob", "Score 2": 0},
-        # Finals
-        {"ID": "F1", "Group": "Finals", "Wave": "Wave 6", "Phase": "Shit the Bed Cup Final", "Time": "18:35 - 18:55", "Court": "4", "Team 1": "Loser Semi 1", "Score 1": 0, "Team 2": "Loser Semi 2", "Score 2": 0},
-        {"ID": "F2", "Group": "Finals", "Wave": "Wave 6", "Phase": "Shart in your pants Cup Final", "Time": "18:35 - 18:55", "Court": "5", "Team 1": "Winner Semi 1", "Score 1": 0, "Team 2": "Winner Semi 2", "Score 2": 0},
-        {"ID": "F3", "Group": "Finals", "Wave": "Wave 7", "Phase": "Shitstain Cup Final", "Time": "19:00 - 19:20", "Court": "3", "Team 1": "Jamie/Kevin", "Score 1": 0, "Team 2": "Gerry/Rob", "Score 2": 0},
-        {"ID": "F4", "Group": "Finals", "Wave": "Wave 8", "Phase": "Champions Cup Final", "Time": "19:05 - 19:30", "Court": "4", "Team 1": "Jamie/Kevin", "Score 1": 0, "Team 2": "Gerry/Rob", "Score 2": 0}
-    ]
-
-# Callback function to handle the editing events cleanly
-def update_scores(key_name, segment_df):
-    state_delta = st.session_state[key_name]
-    if "edited_rows" in state_delta:
-        for idx_str, updates in state_delta["edited_rows"].items():
-            match_id = segment_df.iloc[int(idx_str)]["ID"]
-            for match in st.session_state["matches"]:
-                if match["ID"] == match_id:
-                    if "Score 1" in updates:
-                        match["Score 1"] = updates["Score 1"]
-                    if "Score 2" in updates:
-                        match["Score 2"] = updates["Score 2"]
-
-df_current = pd.DataFrame(st.session_state["matches"])
-
-# Column presentation configuration
-column_setup = {
-    "ID": st.column_config.TextColumn("ID", disabled=True),
-    "Group": st.column_config.TextColumn("Group", disabled=True),
-    "Wave": st.column_config.TextColumn("Wave", disabled=True),
-    "Phase": st.column_config.TextColumn("Phase", disabled=True),
-    "Time": st.column_config.TextColumn("Time", disabled=True),
-    "Court": st.column_config.TextColumn("Court", disabled=True),
-    "Team 1": st.column_config.TextColumn("Team 1", disabled=True),
-    "Score 1": st.column_config.NumberColumn("Score 1", min_value=0, step=1),
-    "Team 2": st.column_config.TextColumn("Team 2", disabled=True),
-    "Score 2": st.column_config.NumberColumn("Score 2", min_value=0, step=1)
-}
-visible_columns = ["Wave", "Phase", "Time", "Court", "Team 1", "Score 1", "Team 2", "Score 2"]
-
-# --- RENDER INTERACTIVE TABLES ---
-st.header("📊 Group A Fixtures")
-df_a = df_current[df_current["Group"] == "Group A"].reset_index(drop=True)
-st.data_editor(df_a, key="edit_a", column_config=column_setup, column_order=visible_columns, hide_index=True, use_container_width=True, on_change=update_scores, args=("edit_a", df_a))
-
-st.header("📊 Group B Fixtures")
-df_b = df_current[df_current["Group"] == "Group B"].reset_index(drop=True)
-st.data_editor(df_b, key="edit_b", column_config=column_setup, column_order=visible_columns, hide_index=True, use_container_width=True, on_change=update_scores, args=("edit_b", df_b))
-
-st.header("⚔️ Knockout Stage")
-df_ko = df_current[df_current["Group"] == "Knockout"].reset_index(drop=True)
-st.data_editor(df_ko, key="edit_ko", column_config=column_setup, column_order=visible_columns, hide_index=True, use_container_width=True, on_change=update_scores, args=("edit_ko", df_ko))
-
-st.header("🏆 The Finals")
-df_f = df_current[df_current["Group"] == "Finals"].reset_index(drop=True)
-st.data_editor(df_f, key="edit_f", column_config=column_setup, column_order=visible_columns, hide_index=True, use_container_width=True, on_change=update_scores, args=("edit_f", df_f))
+        {"ID": "KO4", "Group": "Knockout", "Wave": "Wave 6", "Phase": "Semi Final 4 (G1 2nd v G2 1st)", "Time": "1
