@@ -18,9 +18,6 @@ st.markdown("""
         color: #FFFF00 !important;
         background-color: #000000 !important;
     }
-    div[data-baseweb="popover"] {
-        background-color: #111111 !important;
-    }
     button {
         background-color: #111111 !important;
         color: #FFFF00 !important;
@@ -31,7 +28,7 @@ st.markdown("""
 
 st.title("🎾 Portmarnock Padel Palooza 🎾")
 st.subheader("Live Tournament Dashboard & Score Tracker")
-st.write("Enter scores below. Updates sync instantly for everyone!")
+st.write("Type scores directly into the tables below. Click 'Save & Sync Tournament' to update!")
 
 # --- DATA INITIALIZATION ---
 initial_matches = [
@@ -61,7 +58,7 @@ initial_matches = [
     {"ID": "F4", "Group": "Finals", "Wave": "Wave 8", "Phase": "Champions Cup Final", "Time": "19:05 - 19:30", "Court": "4", "Team 1": "Jamie/Kevin", "Score 1": 0, "Team 2": "Gerry/Rob", "Score 2": 0}
 ]
 
-# Establish multi-user persistent cloud storage using Streamlit's built-in key-value connection
+# Shared persistent storage setup
 try:
     conn = st.connection("cache", type="dict")
 except Exception:
@@ -70,44 +67,41 @@ except Exception:
 if "matches" not in conn:
     conn["matches"] = initial_matches
 
-matches = conn["matches"]
+# Work directly with a Dataframe representation of the stored data
+df_current = pd.DataFrame(conn["matches"])
 
-# --- SIDEBAR: SCORE INPUT ---
-st.sidebar.header("🏆 Update Match Scores")
-match_options = {f"{m['Wave']} - {m['Phase']} ({m['Team 1']} v {m['Team 2']})": m['ID'] for m in matches}
-selected_match_label = st.sidebar.selectbox("Select Match to Score", list(match_options.keys()))
-selected_id = match_options[selected_match_label]
+# Map column configurations to ensure names/times are locked and only score columns can be adjusted
+column_setup = {
+    "ID": None, "Group": None, "Phase": "Phase", 
+    "Wave": "Wave", "Time": "Time", "Court": "Court",
+    "Team 1": "Team 1", "Score 1": st.column_config.NumberColumn("Score 1", min_value=0, step=1),
+    "Team 2": "Team 2", "Score 2": st.column_config.NumberColumn("Score 2", min_value=0, step=1)
+}
 
-# Find selected match data
-match_idx = next(i for i, m in enumerate(matches) if m["ID"] == selected_id)
-current_match = matches[match_idx]
-
-st.sidebar.write(f"**Court:** {current_match['Court']} | **Time:** {current_match['Time']}")
-s1 = st.sidebar.number_input(f"Score for: {current_match['Team 1']}", min_value=0, value=int(current_match['Score 1']), step=1)
-s2 = st.sidebar.number_input(f"Score for: {current_match['Team 2']}", min_value=0, value=int(current_match['Score 2']), step=1)
-
-if st.sidebar.button("Save & Sync Score"):
-    matches[match_idx]["Score 1"] = s1
-    matches[match_idx]["Score 2"] = s2
-    conn["matches"] = matches
-    st.sidebar.success("Scores uploaded successfully!")
-    st.rerun()
-
-# --- MAIN DISPLAY TABLES ---
-df = pd.DataFrame(matches)
-
+# --- RENDER EDITABLE TABLES ---
 st.header("📊 Group A Fixtures")
-df_a = df[df["Group"] == "Group A"][["Wave", "Phase", "Time", "Court", "Team 1", "Score 1", "Team 2", "Score 2"]]
-st.dataframe(df_a, use_container_width=True, hide_index=True)
+df_a = df_current[df_current["Group"] == "Group A"]
+edited_a = st.data_editor(df_a, key="edit_a", column_config=column_setup, hide_index=True, use_container_width=True)
 
 st.header("📊 Group B Fixtures")
-df_b = df[df["Group"] == "Group B"][["Wave", "Phase", "Time", "Court", "Team 1", "Score 1", "Team 2", "Score 2"]]
-st.dataframe(df_b, use_container_width=True, hide_index=True)
+df_b = df_current[df_current["Group"] == "Group B"]
+edited_b = st.data_editor(df_b, key="edit_b", column_config=column_setup, hide_index=True, use_container_width=True)
 
 st.header("⚔️ Knockout Stage")
-df_ko = df[df["Group"] == "Knockout"][["Wave", "Phase", "Time", "Court", "Team 1", "Score 1", "Team 2", "Score 2"]]
-st.dataframe(df_ko, use_container_width=True, hide_index=True)
+df_ko = df_current[df_current["Group"] == "Knockout"]
+edited_ko = st.data_editor(df_ko, key="edit_ko", column_config=column_setup, hide_index=True, use_container_width=True)
 
 st.header("🏆 The Finals")
-df_f = df[df["Group"] == "Finals"][["Wave", "Phase", "Time", "Court", "Team 1", "Score 1", "Team 2", "Score 2"]]
-st.dataframe(df_f, use_container_width=True, hide_index=True)
+df_f = df_current[df_current["Group"] == "Finals"]
+edited_f = st.data_editor(df_f, key="edit_f", column_config=column_setup, hide_index=True, use_container_width=True)
+
+# --- GLOBAL SAVE TRIGGER ---
+st.write("---")
+if st.button("💾 Save & Sync Tournament Changes", use_container_width=True):
+    # Combine all updated segments back into a single global data frame
+    updated_all = pd.concat([edited_a, edited_b, edited_ko, edited_f], ignore_index=True)
+    
+    # Save back to cache
+    conn["matches"] = updated_all.to_dict(orient="records")
+    st.success("All table changes synced perfectly for all players!")
+    st.rerun()
