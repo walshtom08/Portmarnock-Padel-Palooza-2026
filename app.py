@@ -71,4 +71,8 @@ def on_edit(key, df):
 
 st.title("🎾 Padel Palooza")
 df = pd.DataFrame(st.session_state["matches"])
-for s in ["Group A", "Group B
+for s in ["Group A", "Group B", "Knockout", "Finals"]:
+    st.subheader(f"📊 {s}")
+    sub = df[df["Group"] == s]
+    st.data_editor(sub, key=f"e_{s}", use_container_width=True, on_change=on_edit, args=(f"e_{s}", sub))
+    if "Group" in s: st.dataframe(get_standings(s), use_container_width=True)
