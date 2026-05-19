@@ -4,7 +4,7 @@ import pandas as pd
 # Set up page config
 st.set_page_config(page_title="Portmarnock Padel Palooza", layout="wide")
 
-# Force full-app custom CSS styling (Pitch Black background, Pure Yellow Text)
+# Force full-app custom CSS styling (Pitch Black background, Pure Yellow Text, Mobile Grid Fix)
 st.markdown("""
     <style>
     html, body, [data-testid="stAppViewContainer"] {
@@ -14,17 +14,18 @@ st.markdown("""
     h1, h2, h3, h4, p, span, label, div {
         color: #FFFF00 !important;
     }
-    /* Force custom styling on editable grids */
+    /* CRITICAL MOBILE FIX: Force tables to maintain horizontal spreadsheet layout on phones */
+    [data-testid="stHorizontalBlock"], .stDataFrame, div[data-testid="stElementContainer"] {
+        overflow-x: auto !important;
+    }
     .stDataFrame div, .stDataFrame span, .stDataFrame table {
         color: #FFFF00 !important;
         background-color: #000000 !important;
     }
-    /* Target inputs inside the grid cells */
     input {
         color: #FFFF00 !important;
         background-color: #111111 !important;
     }
-    /* Style the main trigger button */
     .stButton>button {
         background-color: #111111 !important;
         color: #FFFF00 !important;
@@ -38,7 +39,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.title("🎾 PADEL PALOOZA 🎾")
-st.write("Tap directly into any score cell below to enter results, then scroll to the bottom and click Save.")
+st.write("📲 Mobile Users: Swipe left/right on the tables to view all columns. Tap any S1 or S2 box to change scores.")
 
 # --- RAW MATCH DATA TEMPLATE ---
 initial_matches = [
@@ -68,7 +69,6 @@ initial_matches = [
     {"ID": "F4", "Sec": "Finals", "Wave": "W8", "Time": "19:05", "Ct": "4", "Team 1": "Jamie/Kevin", "S1": 0, "Team 2": "Gerry/Rob", "S2": 0}
 ]
 
-# Set up cloud synchronization database wrapper
 try:
     conn = st.connection("cache", type="dict")
 except Exception:
@@ -77,10 +77,8 @@ except Exception:
 if "matches" not in conn:
     conn["matches"] = initial_matches
 
-# Read latest state
 current_data = pd.DataFrame(conn["matches"])
 
-# Helper function to generate standardized grid configs optimized for mobile screens
 def generate_grid(df_subset, unique_key):
     return st.data_editor(
         df_subset,
@@ -98,8 +96,6 @@ def generate_grid(df_subset, unique_key):
         }
     )
 
-# --- RENDER THE SECTIONS ---
-
 st.header("📋 Group A Fixtures")
 df_a = current_data[current_data["Sec"] == "Group A"]
 edited_a = generate_grid(df_a, "edit_group_a")
@@ -116,41 +112,32 @@ st.header("🏆 The Cups & Finals")
 df_f = current_data[current_data["Sec"] == "Finals"]
 edited_f = generate_grid(df_f, "edit_finals")
 
-
-# --- LIVE DATABASE RECONCILIATION AND SYNC ---
 st.markdown("<br>", unsafe_allow_html=True)
 if st.button("🔄 SAVE & SYNC ALL SCORES"):
-    # Combine the edited data sheets back into a single frame
     combined_updated = pd.concat([edited_a, edited_b, edited_ko, edited_f])
-    
-    # Push back to cloud memory
     conn["matches"] = combined_updated.to_dict(orient="records")
-    st.success("All match scores synchronized for the venue! Refreshing leaderboard...")
+    st.success("All match scores synchronized! Updating leaderboard...")
     st.rerun()
 
-# --- DYNAMIC LIVE STANDINGS GENERATION ---
 st.markdown("---")
 st.header("📊 Live Group Standings")
 
 def compute_standings(group_name, match_df):
     group_subset = match_df[match_df["Sec"] == group_name]
     teams = set(group_subset["Team 1"].unique()).union(set(group_subset["Team 2"].unique()))
-    
     standings = {team: {"Played": 0, "Points": 0} for team in teams}
     
     for _, row in group_subset.iterrows():
-        # Only evaluate scores if someone actually played/entered them (ignoring default 0-0 initialization states)
         if row["S1"] > 0 or row["S2"] > 0:
             t1, t2 = row["Team 1"], row["Team 2"]
             standings[t1]["Played"] += 1
             standings[t2]["Played"] += 1
-            
             if row["S1"] > row["S2"]:
-                standings[t1]["Points"] += 2  # 2 points for a win
+                standings[t1]["Points"] += 2
             elif row["S2"] > row["S1"]:
                 standings[t2]["Points"] += 2
             else:
-                standings[t1]["Points"] += 1  # 1 point for a draw
+                standings[t1]["Points"] += 1
                 standings[t2]["Points"] += 1
                 
     return pd.DataFrame.from_dict(standings, orient="index").reset_index().rename(columns={"index": "Team"}).sort_values(by="Points", ascending=False)
