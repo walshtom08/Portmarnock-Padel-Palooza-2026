@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+from streamlit_gsheets import GSheetsConnection
 
 # 1. Page Configuration
 st.set_page_config(
@@ -18,35 +19,22 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 st.markdown("<p class='title-font'>🎾 Portmarnock Padel Palooza 🎾</p>", unsafe_allow_html=True)
-st.markdown("<p style='text-align: center;'>Live Tournament Dashboard & Score Tracker</p>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center;'>Live Cloud-Synced Tournament Dashboard</p>", unsafe_allow_html=True)
 st.markdown("---")
 
-# 2. INITIALIZE DATA - COPIED ROW-FOR-ROW FROM YOUR SPREADSHEET
-if 'matches' not in st.session_state:
-    data = [
-        # --- GROUP A FIXTURES ---
-        {"Wave": "Wave 1", "Time": "16:30", "Court": "Court 3", "Group": "Group A", "Team 1": "Stu/Niall Hayden", "Score 1": None, "Score 2": None, "Team 2": "Eric/Dermo"},
-        {"Wave": "Wave 1", "Time": "16:30", "Court": "Court 4", "Group": "Group A", "Team 1": "Richie/Steve", "Score 1": None, "Score 2": None, "Team 2": "Jason/Wonka"},
-        {"Wave": "Wave 2", "Time": "16:55", "Court": "Court 3", "Group": "Group A", "Team 1": "Stu/Niall Hayden", "Score 1": None, "Score 2": None, "Team 2": "Jason/Wonka"},
-        {"Wave": "Wave 3", "Time": "17:20", "Court": "Court 3", "Group": "Group A", "Team 1": "Richie/Steve", "Score 1": None, "Score 2": None, "Team 2": "Eric/Dermo"},
-        {"Wave": "Wave 3", "Time": "17:20", "Court": "Court 4", "Group": "Group A", "Team 1": "Eric/Dermo", "Score 1": None, "Score 2": None, "Team 2": "Jason/Wonka"},
-        {"Wave": "Wave 4", "Time": "17:45", "Court": "Court 3", "Group": "Group A", "Team 1": "Stu/Niall Hayden", "Score 1": None, "Score 2": None, "Team 2": "Richie/Steve"},
-        
-        # --- GROUP B FIXTURES ---
-        {"Wave": "Wave 1", "Time": "16:30", "Court": "Court 5", "Group": "Group B", "Team 1": "Jamie/Kevin", "Score 1": None, "Score 2": None, "Team 2": "Neil/Tom"},
-        {"Wave": "Wave 2", "Time": "16:55", "Court": "Court 4", "Group": "Group B", "Team 1": "Simon/Cillian", "Score 1": None, "Score 2": None, "Team 2": "Gerry/Rob"},
-        {"Wave": "Wave 2", "Time": "16:55", "Court": "Court 5", "Group": "Group B", "Team 1": "Jamie/Kevin", "Score 1": None, "Score 2": None, "Team 2": "Gerry/Rob"},
-        {"Wave": "Wave 3", "Time": "17:20", "Court": "Court 4", "Group": "Group B", "Team 1": "Simon/Cillian", "Score 1": None, "Score 2": None, "Team 2": "Neil/Tom"},
-        {"Wave": "Wave 4", "Time": "17:45", "Court": "Court 5", "Group": "Group B", "Team 1": "Neil/Tom", "Score 1": None, "Score 2": None, "Team 2": "Gerry/Rob"},
-        {"Wave": "Wave 4", "Time": "17:45", "Court": "Court 5", "Group": "Group B", "Team 1": "Jamie/Kevin", "Score 1": None, "Score 2": None, "Team 2": "Simon/Cillian"},
-    ]
-    st.session_state.matches = pd.DataFrame(data)
+# 2. CONNECT TO LIVE GOOGLE SHEET DATABASE
+try:
+    conn = st.connection("gsheets", type=GSheetsConnection)
+    # Read the live matches sheet tab
+    df_matches = conn.read(worksheet="Matches", ttl=0)
+except Exception as e:
+    st.error("Missing Database Connection. Please verify your Google Sheets Secrets configuration on share.streamlit.io.")
+    st.stop()
 
 # 3. Dynamic Standings Engine (With +100 Unbeaten Bonus and Points Scored Tracker)
 def calculate_standings(df, group_name):
     group_df = df[df['Group'] == group_name]
     
-    # Explicitly hardcode the exact teams to prevent dynamic extraction mismatch bugs
     if group_name == "Group A":
         teams = ["Stu/Niall Hayden", "Eric/Dermo", "Richie/Steve", "Jason/Wonka"]
     else:
@@ -57,7 +45,6 @@ def calculate_standings(df, group_name):
     for _, row in group_df.iterrows():
         t1, t2 = row['Team 1'], row['Team 2']
         
-        # Check if row entries match our designated team slots
         if t1 in stats and t2 in stats:
             if pd.notnull(row['Score 1']) and pd.notnull(row['Score 2']):
                 try:
@@ -83,25 +70,23 @@ def calculate_standings(df, group_name):
                 except (ValueError, TypeError):
                     continue
 
-    # Apply spreadsheet rule: Win all 3 group matches = +100 bonus points added directly to Score Total
     for team in stats:
         if stats[team]["W"] == 3:
             stats[team]["Score Total"] += 100
         
     standings_df = pd.DataFrame.from_dict(stats, orient='index').reset_index()
     standings_df.columns = ['Team', 'P', 'W', 'L', 'Match Points', 'Score Total']
-    
     return standings_df.sort_values(by=['Match Points', 'Score Total'], ascending=False).reset_index(drop=True)
 
 
 # ==========================================
-# SECTION 1: INTERACTIVE FIXTURES GRID
+# SECTION 1: INTERACTIVE FIXTURES GRID (AUTO-SAVES TO CLOUD)
 # ==========================================
 st.markdown("<p class='section-font'>📅 Full Tournament Schedule & Live Scores</p>", unsafe_allow_html=True)
-st.caption("💡 Admin Instruction: Click directly on any cell in the 'Score 1' or 'Score 2' columns to type in the results live!")
+st.caption("✨ Cloud Connected: Editing scores inside these boxes permanently saves updates across all phones & laptops instantly!")
 
 edited_df = st.data_editor(
-    st.session_state.matches,
+    df_matches,
     column_order=["Wave", "Time", "Court", "Group", "Team 1", "Score 1", "Score 2", "Team 2"],
     disabled=["Wave", "Time", "Court", "Group", "Team 1", "Team 2"], 
     use_container_width=True,
@@ -109,13 +94,18 @@ edited_df = st.data_editor(
     key="tournament_editor"
 )
 
-if not edited_df.equals(st.session_state.matches):
-    st.session_state.matches = edited_df
-    st.rerun()
+# Trigger automatic cloud database synchronization on grid change
+if not edited_df.equals(df_matches):
+    try:
+        conn.update(worksheet="Matches", data=edited_df)
+        st.success("Scores securely synced to cloud database!")
+        st.rerun()
+    except Exception as e:
+        st.error("Failed to sync updates to Google Sheets. Verify permissions are set to 'Anyone with link can Edit'.")
 
-# Compute standing updates securely
-group_a_table = calculate_standings(st.session_state.matches, "Group A")
-group_b_table = calculate_standings(st.session_state.matches, "Group B")
+# Compute standings securely from cloud records
+group_a_table = calculate_standings(edited_df, "Group A")
+group_b_table = calculate_standings(edited_df, "Group B")
 
 
 # ==========================================
