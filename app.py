@@ -54,7 +54,6 @@ def get_standings(g):
 def update_ko():
     sA, sB = get_standings("Group A")["Team"].tolist(), get_standings("Group B")["Team"].tolist()
     for m in st.session_state["matches"]:
-        # Using .get("Phase") prevents KeyError
         if m.get("Phase") == "Semi Final 1" and len(sA)>0 and len(sB)>1: m["Team 1"], m["Team 2"] = sA[0], sB[1]
         if m.get("Phase") == "Semi Final 2" and len(sB)>0 and len(sA)>1: m["Team 1"], m["Team 2"] = sB[0], sA[1]
 
@@ -68,7 +67,6 @@ def on_edit(key, df):
                     for f in ["Score 1", "Score 2"]:
                         if f in up: m[f] = int(up[f])
         update_ko()
-        st.rerun()
 
 st.title("🎾 Padel Palooza")
 df = pd.DataFrame(st.session_state["matches"])
