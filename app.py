@@ -14,21 +14,14 @@ st.markdown("""
 
 st.title("🎾 Portmarnock Padel Palooza 🎾")
 
-# Data
+# Initialize Data
 if "matches" not in st.session_state:
     st.session_state["matches"] = [
         {"ID": "GA1", "Group": "Group A", "Wave": "W1", "Phase": "Group", "Time": "16:30", "Court": "3", "Team 1": "Stu/Niall", "Score 1": 0, "Team 2": "Eric/Dermo", "Score 2": 0},
         {"ID": "GA2", "Group": "Group A", "Wave": "W1", "Phase": "Group", "Time": "16:30", "Court": "4", "Team 1": "Richie/Steve", "Score 1": 0, "Team 2": "Jason/Wonka", "Score 2": 0},
-        {"ID": "GA3", "Group": "Group A", "Wave": "W2", "Phase": "Group", "Time": "16:55", "Court": "3", "Team 1": "Stu/Niall", "Score 1": 0, "Team 2": "Jason/Wonka", "Score 2": 0},
-        {"ID": "GA4", "Group": "Group A", "Wave": "W3", "Phase": "Group", "Time": "17:20", "Court": "3", "Team 1": "Richie/Steve", "Score 1": 0, "Team 2": "Eric/Dermo", "Score 2": 0},
-        {"ID": "GA5", "Group": "Group A", "Wave": "W3", "Phase": "Group", "Time": "17:20", "Court": "4", "Team 1": "Eric/Dermo", "Score 1": 0, "Team 2": "Jason/Wonka", "Score 2": 0},
-        {"ID": "GA6", "Group": "Group A", "Wave": "W4", "Phase": "Group", "Time": "17:45", "Court": "3", "Team 1": "Stu/Niall", "Score 1": 0, "Team 2": "Richie/Steve", "Score 2": 0},
         {"ID": "GB1", "Group": "Group B", "Wave": "W1", "Phase": "Group", "Time": "16:30", "Court": "5", "Team 1": "Jamie/Kevin", "Score 1": 0, "Team 2": "Neil/Tom", "Score 2": 0},
-        {"ID": "GB2", "Group": "Group B", "Wave": "W2", "Phase": "Group", "Time": "16:55", "Court": "4", "Team 1": "Simon/Cillian", "Score 1": 0, "Team 2": "Gerry/Rob", "Score 2": 0},
-        {"ID": "GB3", "Group": "Group B", "Wave": "W2", "Phase": "Group", "Time": "16:55", "Court": "5", "Team 1": "Jamie/Kevin", "Score 1": 0, "Team 2": "Gerry/Rob", "Score 2": 0},
-        {"ID": "GB4", "Group": "Group B", "Wave": "W3", "Phase": "Group", "Time": "17:20", "Court": "4", "Team 1": "Simon/Cillian", "Score 1": 0, "Team 2": "Neil/Tom", "Score 2": 0},
-        {"ID": "GB5", "Group": "Group B", "Wave": "W4", "Phase": "Group", "Time": "17:45", "Court": "5", "Team 1": "Neil/Tom", "Score 1": 0, "Team 2": "Gerry/Rob", "Score 2": 0},
-        {"ID": "GB6", "Group": "Group B", "Wave": "W4", "Phase": "Group", "Time": "17:45", "Court": "5", "Team 1": "Jamie/Kevin", "Score 1": 0, "Team 2": "Simon/Cillian", "Score 2": 0}
+        {"ID": "KO1", "Group": "Knockout", "Wave": "W5", "Phase": "Semi Final 1", "Time": "18:10", "Court": "3", "Team 1": "A1 v B2", "Score 1": 0, "Team 2": "TBD", "Score 2": 0},
+        {"ID": "F1", "Group": "Finals", "Wave": "W8", "Phase": "Final", "Time": "19:05", "Court": "4", "Team 1": "Winner SF1", "Score 1": 0, "Team 2": "Winner SF2", "Score 2": 0}
     ]
 
 def update_scores(key, df):
@@ -59,8 +52,9 @@ def get_standings(group):
         })
     return pd.DataFrame(rows).sort_values("Match Points", ascending=False)
 
-# UI
+# UI Display
 df = pd.DataFrame(st.session_state["matches"])
+
 for g in ["Group A", "Group B"]:
     st.header(f"📊 {g} Fixtures")
     sub = df[df["Group"] == g].reset_index(drop=True)
@@ -68,3 +62,13 @@ for g in ["Group A", "Group B"]:
                    on_change=update_scores, args=(f"e_{g}", sub))
     st.subheader(f"🏆 {g} Standings")
     st.dataframe(get_standings(g), hide_index=True, use_container_width=True)
+
+st.header("⚔️ Knockout Stage")
+sub_ko = df[df["Group"] == "Knockout"].reset_index(drop=True)
+st.data_editor(sub_ko, key="e_ko", hide_index=True, use_container_width=True, 
+               on_change=update_scores, args=("e_ko", sub_ko))
+
+st.header("🏆 The Finals")
+sub_f = df[df["Group"] == "Finals"].reset_index(drop=True)
+st.data_editor(sub_f, key="e_f", hide_index=True, use_container_width=True, 
+               on_change=update_scores, args=("e_f", sub_f))
