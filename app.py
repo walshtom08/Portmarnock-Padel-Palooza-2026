@@ -28,14 +28,14 @@ if "matches" not in st.session_state:
         {"Group": "Group B", "Wave": "W3", "Time": "17:20", "Court": "4", "Team 1": "Simon/Cillian", "Score 1": 0, "Team 2": "Neil/Tom", "Score 2": 0},
         {"Group": "Group B", "Wave": "W4", "Time": "17:45", "Court": "5", "Team 1": "Neil/Tom", "Score 1": 0, "Team 2": "Gerry/Rob", "Score 2": 0},
         {"Group": "Group B", "Wave": "W4", "Time": "17:45", "Court": "5", "Team 1": "Jamie/Kevin", "Score 1": 0, "Team 2": "Simon/Cillian", "Score 2": 0},
-        {"Group": "Knockout", "Wave": "W5", "Time": "18:10", "Court": "3", "Phase": "Semi 1", "Team 1": "TBD", "Score 1": 0, "Team 2": "TBD", "Score 2": 0},
-        {"Group": "Knockout", "Wave": "W5", "Time": "18:10", "Court": "4", "Phase": "Semi 2", "Team 1": "TBD", "Score 1": 0, "Team 2": "TBD", "Score 2": 0},
-        {"Group": "Knockout", "Wave": "W5", "Time": "18:10", "Court": "5", "Phase": "Semi 3", "Team 1": "TBD", "Score 1": 0, "Team 2": "TBD", "Score 2": 0},
-        {"Group": "Knockout", "Wave": "W6", "Time": "18:35", "Court": "3", "Phase": "Semi 4", "Team 1": "TBD", "Score 1": 0, "Team 2": "TBD", "Score 2": 0},
-        {"Group": "Finals", "Wave": "W6", "Time": "18:35", "Court": "4", "Phase": "Shit the Bed", "Team 1": "TBD", "Score 1": 0, "Team 2": "TBD", "Score 2": 0},
-        {"Group": "Finals", "Wave": "W6", "Time": "18:35", "Court": "5", "Phase": "Shart in your pants", "Team 1": "TBD", "Score 1": 0, "Team 2": "TBD", "Score 2": 0},
-        {"Group": "Finals", "Wave": "W7", "Time": "19:00", "Court": "3", "Phase": "Shitstain", "Team 1": "TBD", "Score 1": 0, "Team 2": "TBD", "Score 2": 0},
-        {"Group": "Finals", "Wave": "W8", "Time": "19:05", "Court": "4", "Phase": "Champions", "Team 1": "TBD", "Score 1": 0, "Team 2": "TBD", "Score 2": 0}
+        {"Group": "Knockout", "Wave": "W5", "Time": "18:10", "Court": "3", "Phase": "Semi Final 1", "Team 1": "TBD", "Score 1": 0, "Team 2": "TBD", "Score 2": 0},
+        {"Group": "Knockout", "Wave": "W5", "Time": "18:10", "Court": "4", "Phase": "Semi Final 2", "Team 1": "TBD", "Score 1": 0, "Team 2": "TBD", "Score 2": 0},
+        {"Group": "Knockout", "Wave": "W5", "Time": "18:10", "Court": "5", "Phase": "Semi Final 3", "Team 1": "TBD", "Score 1": 0, "Team 2": "TBD", "Score 2": 0},
+        {"Group": "Knockout", "Wave": "W6", "Time": "18:35", "Court": "3", "Phase": "Semi Final 4", "Team 1": "TBD", "Score 1": 0, "Team 2": "TBD", "Score 2": 0},
+        {"Group": "Finals", "Wave": "W6", "Time": "18:35", "Court": "4", "Phase": "Shit the Bed Cup", "Team 1": "TBD", "Score 1": 0, "Team 2": "TBD", "Score 2": 0},
+        {"Group": "Finals", "Wave": "W6", "Time": "18:35", "Court": "5", "Phase": "Shart in your pants Cup", "Team 1": "TBD", "Score 1": 0, "Team 2": "TBD", "Score 2": 0},
+        {"Group": "Finals", "Wave": "W7", "Time": "19:00", "Court": "3", "Phase": "Shitstain Cup", "Team 1": "TBD", "Score 1": 0, "Team 2": "TBD", "Score 2": 0},
+        {"Group": "Finals", "Wave": "W8", "Time": "19:05", "Court": "4", "Phase": "Champions Cup", "Team 1": "TBD", "Score 1": 0, "Team 2": "TBD", "Score 2": 0}
     ]
 
 # --- LOGIC ---
@@ -49,14 +49,24 @@ def get_standings(group):
         res[t1]["Pts"] += s1; res[t2]["Pts"] += s2
         if s1 > s2: res[t1]["Wins"] += 1
         elif s2 > s1: res[t2]["Wins"] += 1
-    return pd.DataFrame([{"Team": t, "Pts": v["Wins"] * 2} for t, v in res.items()]).sort_values("Pts", ascending=False)
+    return pd.DataFrame([{"Team": t, "Match Points": v["Wins"] * 2, "Points Scored": v["Pts"]} for t, v in res.items()]).sort_values(["Match Points", "Points Scored"], ascending=False)
 
-def update_bracket():
-    # Example logic: Populate Semis with top teams from Groups
-    sA = get_standings("Group A")["Team"].tolist()
-    sB = get_standings("Group B")["Team"].tolist()
-    # Simple auto-fill logic for demo:
-    for m in st.session_state["matches"]:
-        if m["Phase"] == "Semi 1" and len(sA) >= 1 and len(sB) >= 2:
-            m["Team 1"], m["Team 2"] = sA[0], sB[1]
-        if m["Phase"] == "Semi 2" and len(sA) >= 2 and len(sB) >=
+def on_editor_change(key, df):
+    delta = st.session_state[key]
+    if "edited_rows" in delta:
+        for idx, up in delta["edited_rows"].items():
+            original_row = df.iloc[int(idx)]
+            for m in st.session_state["matches"]:
+                if m["Group"] == original_row["Group"] and m.get("Phase") == original_row.get("Phase") and m.get("Time") == original_row.get("Time"):
+                    m.update(up)
+
+# --- UI ---
+st.title("🎾 Padel Palooza")
+df = pd.DataFrame(st.session_state["matches"])
+
+for section in ["Group A", "Group B", "Knockout", "Finals"]:
+    st.subheader(f"📊 {section}")
+    sub = df[df["Group"] == section]
+    st.data_editor(sub, key=f"e_{section}", use_container_width=True, on_change=on_editor_change, args=(f"e_{section}", sub))
+    if "Group" in section:
+        st.dataframe(get_standings(section), use_container_width=True)
