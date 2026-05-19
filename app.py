@@ -3,6 +3,7 @@ import pandas as pd
 
 st.set_page_config(page_title="Portmarnock Padel Palooza", layout="wide")
 
+# CSS
 st.markdown("""
     <style>
     html, body, [data-testid="stAppViewContainer"] { background-color: #000000 !important; color: #FFFF00 !important; }
@@ -12,15 +13,26 @@ st.markdown("""
 
 st.title("🎾 Portmarnock Padel Palooza 🎾")
 
-# Full Tournament Data with restored columns
+# Full Tournament Data
 if "matches" not in st.session_state:
     st.session_state["matches"] = [
+        # Group A
         {"Group": "Group A", "Wave": "W1", "Time": "16:30", "Court": "3", "Team 1": "Stu/Niall", "Score 1": 0, "Team 2": "Eric/Dermo", "Score 2": 0},
         {"Group": "Group A", "Wave": "W1", "Time": "16:30", "Court": "4", "Team 1": "Richie/Steve", "Score 1": 0, "Team 2": "Jason/Wonka", "Score 2": 0},
+        {"Group": "Group A", "Wave": "W2", "Time": "16:55", "Court": "3", "Team 1": "Stu/Niall", "Score 1": 0, "Team 2": "Jason/Wonka", "Score 2": 0},
+        {"Group": "Group A", "Wave": "W3", "Time": "17:20", "Court": "3", "Team 1": "Richie/Steve", "Score 1": 0, "Team 2": "Eric/Dermo", "Score 2": 0},
+        {"Group": "Group A", "Wave": "W3", "Time": "17:20", "Court": "4", "Team 1": "Eric/Dermo", "Score 1": 0, "Team 2": "Jason/Wonka", "Score 2": 0},
+        {"Group": "Group A", "Wave": "W4", "Time": "17:45", "Court": "3", "Team 1": "Stu/Niall", "Score 1": 0, "Team 2": "Richie/Steve", "Score 2": 0},
+        # Group B
         {"Group": "Group B", "Wave": "W1", "Time": "16:30", "Court": "5", "Team 1": "Jamie/Kevin", "Score 1": 0, "Team 2": "Neil/Tom", "Score 2": 0},
         {"Group": "Group B", "Wave": "W2", "Time": "16:55", "Court": "4", "Team 1": "Simon/Cillian", "Score 1": 0, "Team 2": "Gerry/Rob", "Score 2": 0},
+        {"Group": "Group B", "Wave": "W2", "Time": "16:55", "Court": "5", "Team 1": "Jamie/Kevin", "Score 1": 0, "Team 2": "Gerry/Rob", "Score 2": 0},
+        {"Group": "Group B", "Wave": "W3", "Time": "17:20", "Court": "4", "Team 1": "Simon/Cillian", "Score 1": 0, "Team 2": "Neil/Tom", "Score 2": 0},
+        {"Group": "Group B", "Wave": "W4", "Time": "17:45", "Court": "5", "Team 1": "Neil/Tom", "Score 1": 0, "Team 2": "Gerry/Rob", "Score 2": 0},
+        {"Group": "Group B", "Wave": "W4", "Time": "17:45", "Court": "5", "Team 1": "Jamie/Kevin", "Score 1": 0, "Team 2": "Simon/Cillian", "Score 2": 0},
+        # Knockout
         {"Group": "Knockout", "Wave": "W5", "Time": "18:10", "Court": "3", "Phase": "Semi 1 (A1 v B2)", "Team 1": "TBD", "Score 1": 0, "Team 2": "TBD", "Score 2": 0},
-        {"Group": "Knockout", "Wave": "W6", "Time": "18:35", "Court": "3", "Phase": "Semi 2 (A2 v B1)", "Team 1": "TBD", "Score 1": 0, "Team 2": "TBD", "Score 2": 0}
+        {"Group": "Knockout", "Wave": "W5", "Time": "18:10", "Court": "4", "Phase": "Semi 2 (A2 v B1)", "Team 1": "TBD", "Score 1": 0, "Team 2": "TBD", "Score 2": 0}
     ]
 
 def get_standings(group):
@@ -61,8 +73,7 @@ df = pd.DataFrame(st.session_state["matches"])
 
 for g in ["Group A", "Group B"]:
     st.header(f"📊 {g} Fixtures")
-    # Show columns: Wave, Time, Court, Teams, Scores
-    sub = df[df["Group"] == g].drop(columns=["Group"], errors="ignore")
+    sub = df[df["Group"] == g].drop(columns=["Group", "Phase"], errors="ignore")
     st.data_editor(sub, key=f"e_{g}", hide_index=True, use_container_width=True, on_change=update_scores, args=(f"e_{g}", sub))
     st.subheader(f"🏆 {g} Standings")
     st.dataframe(get_standings(g), hide_index=True, use_container_width=True)
