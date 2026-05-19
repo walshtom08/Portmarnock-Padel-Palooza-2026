@@ -52,10 +52,14 @@ def get_standings(g):
     return pd.DataFrame(rows).sort_values(["Pts", "Score"], ascending=False)
 
 def update_ko():
-    sA, sB = get_standings("Group A")["Team"].tolist(), get_standings("Group B")["Team"].tolist()
+    sA = get_standings("Group A")["Team"].tolist()
+    sB = get_standings("Group B")["Team"].tolist()
     for m in st.session_state["matches"]:
-        if m.get("Phase") == "Semi Final 1" and len(sA)>0 and len(sB)>1: m["Team 1"], m["Team 2"] = sA[0], sB[1]
-        if m.get("Phase") == "Semi Final 2" and len(sB)>0 and len(sA)>1: m["Team 1"], m["Team 2"] = sB[0], sA[1]
+        p = m.get("Phase")
+        if p == "Semi Final 3" and len(sA) > 0 and len(sB) > 1: m["Team 1"], m["Team 2"] = sA[0], sB[1]
+        elif p == "Semi Final 4" and len(sB) > 0 and len(sA) > 1: m["Team 1"], m["Team 2"] = sB[0], sA[1]
+        elif p == "Semi Final 1" and len(sA) > 2 and len(sB) > 3: m["Team 1"], m["Team 2"] = sA[2], sB[3]
+        elif p == "Semi Final 2" and len(sB) > 2 and len(sA) > 3: m["Team 1"], m["Team 2"] = sB[2], sA[3]
 
 def on_edit(key, df):
     delta = st.session_state[key]
