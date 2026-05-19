@@ -51,31 +51,31 @@ def get_standings(g):
     rows = [{"Team": t, "Pts": v["W"]*2, "Score": v["P"]+(100 if v["W"]==3 else 0)} for t, v in r.items()]
     return pd.DataFrame(rows).sort_values(["Pts", "Score"], ascending=False)
 
-def update_ko():
+def update_tournament():
     sA = get_standings("Group A")["Team"].tolist()
     sB = get_standings("Group B")["Team"].tolist()
+    
+    sf_data = {}
     for m in st.session_state["matches"]:
         p = m.get("Phase")
+        # Update Semis
         if p == "Semi Final 3" and len(sA) > 0 and len(sB) > 1: m["Team 1"], m["Team 2"] = sA[0], sB[1]
         elif p == "Semi Final 4" and len(sB) > 0 and len(sA) > 1: m["Team 1"], m["Team 2"] = sB[0], sA[1]
         elif p == "Semi Final 1" and len(sA) > 2 and len(sB) > 3: m["Team 1"], m["Team 2"] = sA[2], sB[3]
         elif p == "Semi Final 2" and len(sB) > 2 and len(sA) > 3: m["Team 1"], m["Team 2"] = sB[2], sA[3]
-
-def on_edit(key, df):
-    delta = st.session_state[key]
-    if "edited_rows" in delta:
-        for idx, up in delta["edited_rows"].items():
-            row = df.iloc[int(idx)]
-            for m in st.session_state["matches"]:
-                if m["Group"] == row["Group"] and m["Team 1"] == row["Team 1"] and m["Time"] == row["Time"]:
-                    for f in ["Score 1", "Score 2"]:
-                        if f in up: m[f] = int(up[f])
-        update_ko()
-
-st.title("🎾 Padel Palooza")
-df = pd.DataFrame(st.session_state["matches"])
-for s in ["Group A", "Group B", "Knockout", "Finals"]:
-    st.subheader(f"📊 {s}")
-    sub = df[df["Group"] == s]
-    st.data_editor(sub, key=f"e_{s}", use_container_width=True, on_change=on_edit, args=(f"e_{s}", sub))
-    if "Group" in s: st.dataframe(get_standings(s), use_container_width=True)
+        
+        if p and "Semi Final" in p:
+            s1, s2 = int(m.get("Score 1", 0)), int(m.get("Score 2", 0))
+            if s1 > s2: sf_data[p] = {"W": m["Team 1"], "L": m["Team 2"]}
+            elif s2 > s1: sf_data[p] = {"W": m["Team 2"], "L": m["Team 1"]}
+            
+    # Update Finals
+    for m in st.session_state["matches"]:
+        p = m.get("Phase")
+        if p == "Shit the Bed Cup" and "Semi Final 1" in sf_data and "Semi Final 2" in sf_data:
+            m["Team 1"], m["Team 2"] = sf_data["Semi Final 1"]["W"], sf_data["Semi Final 2"]["W"]
+        elif p == "Shart in your pants Cup" and "Semi Final 1" in sf_data and "Semi Final 2" in sf_data:
+            m["Team 1"], m["Team 2"] = sf_data["Semi Final 1"]["L"], sf_data["Semi Final 2"]["L"]
+        elif p == "Champions Cup" and "Semi Final 3" in sf_data and "Semi Final 4" in sf_data:
+            m["Team 1"], m["Team 2"] = sf_data["Semi Final 3"]["W"], sf_data["Semi Final 4"]["W"]
+        elif p == "Shitstain Cup" and "Semi Final 3" in sf_data and "Semi Final 4"
