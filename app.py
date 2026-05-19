@@ -54,8 +54,9 @@ def get_standings(g):
 def update_ko():
     sA, sB = get_standings("Group A")["Team"].tolist(), get_standings("Group B")["Team"].tolist()
     for m in st.session_state["matches"]:
-        if m["Phase"] == "Semi Final 1" and len(sA)>0 and len(sB)>1: m["Team 1"], m["Team 2"] = sA[0], sB[1]
-        if m["Phase"] == "Semi Final 2" and len(sB)>0 and len(sA)>1: m["Team 1"], m["Team 2"] = sB[0], sA[1]
+        # Using .get("Phase") prevents KeyError
+        if m.get("Phase") == "Semi Final 1" and len(sA)>0 and len(sB)>1: m["Team 1"], m["Team 2"] = sA[0], sB[1]
+        if m.get("Phase") == "Semi Final 2" and len(sB)>0 and len(sA)>1: m["Team 1"], m["Team 2"] = sB[0], sA[1]
 
 def on_edit(key, df):
     delta = st.session_state[key]
